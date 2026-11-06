@@ -1,0 +1,21 @@
+{
+  "name": "homepage",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "update-bangs": "node scripts/update-bangs.mjs",
+    "test": "npm run build && node --test tests/",
+    "test:browser": "npm run build && node scripts/e2e-browser.mjs chrome && node scripts/e2e-browser.mjs firefox"
+  },
+  "dependencies": {
+    "astro": "^7.4.7",
+    "lucide-static": "^1.70.0",
+    "simple-icons": "^16.36.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.16.0"
+  }
+}

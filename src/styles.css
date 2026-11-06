@@ -1,0 +1,921 @@
+:root {
+  color-scheme: dark;
+  /* Set from the clock: the week's hue. Everything tinted is low in chroma, and text stays neutral. */
+  --hue: 29;
+  --ink: #f4f4f1;
+  --ink-2: #cfcfca;
+  --ink-3: #a3a39d;
+  --page: oklch(0.17 0.02 var(--hue));
+  --panel: oklch(0.21 0.022 var(--hue) / 0.72);
+  --panel-solid: oklch(0.24 0.024 var(--hue));
+  --field: oklch(0.17 0.02 var(--hue));
+  --field-focus: oklch(0.31 0.03 var(--hue));
+  --wash: oklch(0.9 0.04 var(--hue) / 0.1);
+  --rule: oklch(0.9 0.04 var(--hue) / 0.14);
+  --head: 1.5rem;
+  --blur: blur(4px);
+  --tile: 5.75rem;
+  --tile-gap: 0.15rem;
+  --gap: 0.75rem;
+  --pad: 0.75rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--page);
+}
+
+/* Hidden until the first draw, so a reload never shows half a page. The tint behind it is
+   set in the page's head, before anything can paint. */
+html:not(.drawn) body {
+  visibility: hidden;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 15px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Colour changes on hover, focus and press ease in rather than snapping. */
+.ready .tile,
+.ready .button,
+.ready .icon-button,
+.ready .icon-choice,
+.ready .group-name,
+.ready .edit-toggle,
+.ready .repo-corner,
+.ready .results li,
+.ready #search-input,
+.ready .dialog input,
+.ready .dialog select {
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+}
+
+/* These look like plain text fields, and being search fields keeps password managers away. */
+input[type='search'] {
+  appearance: none;
+}
+
+input[type='search']::-webkit-search-cancel-button {
+  display: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- Background */
+
+.backdrop,
+.backdrop > * {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.backdrop {
+  z-index: -1;
+}
+
+#pattern path {
+  fill: none;
+  stroke: oklch(0.75 0.06 var(--hue) / 0.28);
+  stroke-width: 1.2;
+}
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* ---- Clock and weather */
+
+main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  min-height: 100dvh;
+  max-width: 1760px;
+  margin: 0 auto;
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem);
+}
+
+.now {
+  text-align: center;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.5);
+}
+
+.clock {
+  display: block;
+  min-height: 1em;
+  font-size: clamp(4.75rem, 11vw, 9.5rem);
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.today {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+  min-height: 1.75rem;
+  margin: 0.5rem 0 0;
+  /* The weather pencil sits just past the end of this row, so keep room for it on both sides. */
+  padding-inline: calc(var(--head) + 0.15rem);
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.condition {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weather .icon {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.temperature {
+  font-weight: 600;
+}
+
+/* ---- Search */
+
+.search {
+  position: relative;
+  z-index: 2;
+  width: min(44rem, 100%);
+  margin: 0 auto;
+}
+
+#search-input {
+  width: 100%;
+  height: 3.25rem;
+  padding: 0 3.25rem;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.1rem;
+  background: var(--panel-solid);
+  border: 0;
+  border-radius: 999px;
+}
+
+.search > .icon {
+  position: absolute;
+  top: 1rem;
+  left: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+#search-input:focus {
+  background: var(--field-focus);
+  outline: none;
+}
+
+#search-input::selection {
+  color: #141413;
+  background: oklch(0.85 0.05 var(--hue));
+}
+
+.results {
+  position: absolute;
+  inset: calc(100% + 0.35rem) 0 auto;
+  padding: 0.35rem;
+  background: var(--panel-solid);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+}
+
+.results li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+.results li:hover,
+.results li[aria-selected='true'] {
+  background: var(--wash);
+}
+
+.results .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.results .detail {
+  flex: none;
+  max-width: 55%;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Link groups */
+
+.group {
+  padding: 0.6rem var(--pad) var(--pad);
+  background: var(--panel);
+  border-radius: 0.75rem;
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+/* Editing's header takes the same space, so cards keep their size and the columns stay put. */
+.group h2,
+.group-head {
+  height: var(--head);
+  margin: 0 0 0.35rem;
+}
+
+.group h2,
+.group-name {
+  padding: 0 0.25rem;
+  text-align: center;
+  color: var(--ink-2);
+  font: 600 0.8rem/var(--head) system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Half-tile columns, sized by client/columns.js: see balanceRows there. */
+.group ul {
+  display: grid;
+  gap: var(--tile-gap);
+  grid-template-columns: repeat(var(--half-columns, 2), calc((var(--tile) - var(--tile-gap)) / 2));
+  justify-content: center;
+}
+
+.group li {
+  grid-column-end: span 2;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0.6rem 0.25rem 0.5rem;
+  color: var(--ink);
+  font-size: 0.8rem;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 0.5rem;
+}
+
+.tile:hover {
+  background: var(--wash);
+}
+
+.icon {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  fill: currentColor;
+}
+
+.icon.line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon.letter {
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--wash);
+  border-radius: 0.45rem;
+}
+
+.empty {
+  text-align: center;
+}
+
+.empty .button {
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+.empty p {
+  margin: 0 0 0.75rem;
+  color: var(--ink-2);
+}
+
+/* ---- Controls */
+
+.button {
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  color: var(--ink);
+  font: inherit;
+  white-space: nowrap;
+  background: var(--wash);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--field-focus);
+}
+
+.button.primary {
+  color: #141413;
+  background: var(--ink);
+}
+
+.button.primary:hover {
+  background: var(--ink-2);
+}
+
+.button:active {
+  background: var(--wash);
+}
+
+.button.primary:active {
+  background: var(--ink-3);
+}
+
+.icon-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--head);
+  height: var(--head);
+  padding: 0;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--wash);
+}
+
+.icon-button:active,
+.icon-choice:active,
+.tile:active {
+  background: var(--field-focus);
+}
+
+.icon-button .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dialog input,
+.dialog select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  background: var(--field);
+  border: 0;
+  border-radius: 0.5rem;
+}
+
+.dialog input:focus,
+.dialog select:focus,
+.group-name:focus {
+  background: var(--field-focus);
+  outline: none;
+}
+
+/* ---- The only trace of editing while browsing */
+
+.edit-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.edit-toggle:hover,
+.edit-toggle:focus-visible {
+  background: var(--wash);
+  opacity: 1;
+}
+
+.edit-toggle:active {
+  background: var(--field-focus);
+}
+
+.edit-toggle .icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* ---- The triangle in the top right corner, linking to the source */
+
+.repo-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  color: var(--ink-2);
+  background: var(--panel-solid);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.repo-corner:hover,
+.repo-corner:focus-visible {
+  color: var(--ink);
+  background: var(--field-focus);
+  outline: none;
+}
+
+.repo-corner .icon {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+/* ---- Edit mode */
+
+/* The toolbar replaces the search bar at the same height, so nothing below it moves. */
+.toolbar {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  height: 3.25rem;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+  background: var(--panel-solid);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
+}
+
+.editor-message {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 10;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background: var(--panel-solid);
+  border-radius: 1.25rem;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
+  transform: translateX(-50%);
+}
+
+.editor-message:empty,
+.dialog-message:empty,
+.location-results:empty {
+  display: none;
+}
+
+.group-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+/* Spans the whole header under the buttons, so the name is centred exactly as it is while
+   browsing, however many buttons there are on each side. */
+.group-name {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding-inline: calc(2 * var(--head) + 0.25rem);
+  background: none;
+  border: 0;
+  border-radius: 0.35rem;
+}
+
+.group-head .icon-button {
+  position: relative;
+  z-index: 1;
+}
+
+.group-grip {
+  margin-right: auto;
+}
+
+.group-name:hover {
+  background: var(--wash);
+}
+
+.editing .tile {
+  cursor: grab;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.group-grip {
+  cursor: grab;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Out of the flow, so it can't wrap onto its own line and shift the page below. */
+.weather-slot {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Empty, it would still take a gap beside the date and push the date off centre. */
+.weather-slot:has(#weather[hidden]) {
+  margin-left: -1.25rem;
+}
+
+#weather-edit {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-left: 0.15rem;
+  transform: translateY(-50%);
+}
+
+/* Entering and leaving edit mode crossfades only what changes: see setEditing in
+   client/main.js. Transitions animate snapshots, which lose backdrop blur, so the page itself
+   is left out and stays live underneath. Group headers are named in client/links.js. */
+:root {
+  view-transition-name: none;
+}
+
+/* Separate names, so one fades out as the other fades in. A shared name would morph one into the other. */
+#search {
+  view-transition-name: search-bar;
+}
+
+#toolbar {
+  view-transition-name: edit-toolbar;
+}
+
+#weather-edit {
+  view-transition-name: weather-edit;
+}
+
+#empty {
+  view-transition-name: empty-message;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.3s;
+}
+
+/* ---- Dragging */
+
+.dragging,
+.dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.drag-placeholder {
+  opacity: 0.25;
+}
+
+body > .drag-clone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  margin: 0;
+  list-style: none;
+  background: var(--panel-solid);
+  border-radius: 0.75rem;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 0.5);
+  opacity: 1;
+  pointer-events: none;
+  transform-origin: top left;
+  will-change: transform;
+}
+
+/* ---- Dialogs */
+
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.1rem 1.25rem;
+  color: var(--ink);
+  background: var(--panel-solid);
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 16px 50px rgb(0 0 0 / 0.55);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+.dialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.dialog label {
+  display: block;
+  margin: 0.7rem 0 0.25rem;
+  color: var(--ink-2);
+  font-size: 0.85rem;
+}
+
+.dialog-message {
+  margin: 0.5rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.85rem;
+}
+
+.location-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.location-row .button {
+  flex: none;
+}
+
+.location-results {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.location-results .button {
+  width: 100%;
+  height: auto;
+  padding-block: 0.4rem;
+  text-align: left;
+  white-space: normal;
+  border-radius: 0.5rem;
+}
+
+.icon-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon-preview {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.icon-field .button {
+  flex: none;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+  gap: 0.2rem;
+  max-height: 11.5rem;
+  margin-top: 0.5rem;
+  overflow-y: auto;
+}
+
+.icon-grid:empty {
+  display: none;
+}
+
+.icon-choice {
+  display: grid;
+  place-items: center;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  /* There are thousands of these, so only draw the ones in view. */
+  content-visibility: auto;
+  contain-intrinsic-size: 2.75rem 2.75rem;
+}
+
+.icon-choice:hover {
+  background: var(--wash);
+}
+
+.icon-choice[aria-pressed='true'] {
+  background: var(--field-focus);
+}
+
+.icon-choice .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dialog-actions span {
+  flex: 1;
+}
+
+/* ---- Columns, centred against each other. Filled by client/columns.js. */
+
+.groups-box {
+  position: relative;
+  container-type: inline-size;
+}
+
+/* Never seen. Its size only changes where the layout might: its width at each new column,
+   and its height at each new tile per row. client/columns.js watches it, so that resizing
+   runs no script in between. Keep these sums in step with columnLayout there. */
+.layout-probe {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.layout-probe > div {
+  width: round(down, calc(100cqw + var(--gap)), calc(3 * var(--tile) + 2 * var(--tile-gap) + 2 * var(--pad) + var(--gap)));
+  height: round(
+    down,
+    calc((100cqw - (var(--columns, 1) - 1) * var(--gap)) / var(--columns, 1) - 2 * var(--pad) + var(--tile-gap)),
+    calc(var(--tile) + var(--tile-gap))
+  );
+}
+
+.groups {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+}
+
+.groups > .group {
+  flex: 0 0 var(--column-width);
+}
+
+.column {
+  display: flex;
+  flex: 0 0 var(--column-width);
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+}
+
+/* ---- One column: separate cards would only waste width, so the groups share one panel.
+   Keep this width in step with ONE_COLUMN in client/columns.js. */
+
+@media (max-width: 43rem) {
+  :root {
+    --tile: 4.75rem;
+    --pad: 0.6rem;
+    --head: 2rem;
+  }
+
+  main {
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  .groups:empty {
+    display: none;
+  }
+
+  .repo-corner {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .repo-corner .icon {
+    top: 0.45rem;
+    right: 0.45rem;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .groups {
+    display: block;
+    background: var(--panel);
+    border-radius: 0.75rem;
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+  }
+
+  .group {
+    position: relative;
+    padding-block: 0.5rem;
+    background: none;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .group + .group::before {
+    position: absolute;
+    top: 0;
+    right: var(--pad);
+    left: var(--pad);
+    height: 1px;
+    background: var(--rule);
+    content: '';
+  }
+
+}
+
+@media (max-width: 28rem) {
+  .toolbar {
+    gap: 0.2rem;
+    padding-inline: 0.3rem;
+  }
+
+  .toolbar .button {
+    padding-inline: 0.55rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 22rem) {
+  .toolbar .button {
+    padding-inline: 0.35rem;
+    font-size: 0.78rem;
+  }
+}

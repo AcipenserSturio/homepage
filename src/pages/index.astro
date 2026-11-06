@@ -1,0 +1,292 @@
+---
+import "../styles.css";
+import { weekHue } from "../client/background.js";
+import { renderIconSet } from "../icons";
+
+// Keep the page's data to itself: it can only talk to the weather service.
+const CSP = [
+  "default-src 'none'",
+  "script-src 'unsafe-inline'",
+  "style-src 'unsafe-inline'",
+  "img-src data:",
+  "connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join("; ");
+
+const TITLE = "Homepage";
+const DESCRIPTION = "A quiet start page.";
+const PAGE_URL = new URL("/", Astro.site).href;
+const FAVICON = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1b1a22"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="#f4f4f1" stroke-width="2.25"/><path d="M16 10.5V16l3.5 2.25" fill="none" stroke="#f4f4f1" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+)}`;
+
+// Runs before anything can paint, so the first frame already has the right tint.
+const SET_HUE = `document.documentElement.style.setProperty('--hue',(${weekHue})().toFixed(1))`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
+    {
+      import.meta.env.PROD && (
+        <meta http-equiv="Content-Security-Policy" content={CSP} />
+      )
+    }
+    <title>{TITLE}</title>
+    <meta name="description" content={DESCRIPTION} />
+    <meta name="application-name" content={TITLE} />
+    <meta name="theme-color" content="#14131a" />
+    <link rel="canonical" href={PAGE_URL} />
+    <link rel="icon" type="image/svg+xml" href={FAVICON} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="home.asi.fish" />
+    <meta property="og:title" content={TITLE} />
+    <meta property="og:description" content={DESCRIPTION} />
+    <meta property="og:url" content={PAGE_URL} />
+    <meta property="og:locale" content="en" />
+    <meta name="twitter:card" content="summary" />
+    <script is:inline set:html={SET_HUE} />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <svg
+        id="pattern"
+        viewBox="0 0 1600 900"
+        preserveAspectRatio="xMidYMid slice"></svg>
+    </div>
+    <svg
+      id="icon-set"
+      class="sprite"
+      aria-hidden="true"
+      set:html={renderIconSet()}
+    />
+
+    <main>
+      <header class="now">
+        <time id="clock" class="clock"></time>
+        <p class="today">
+          <span id="date"></span>
+          <span class="weather-slot">
+            <span id="weather" class="weather" title="Weather data by Open-Meteo.com (CC BY 4.0): https://open-meteo.com/" hidden>
+              <svg class="icon line" aria-hidden="true"><use href=""></use></svg
+              >
+              <span class="temperature"></span>
+              <span class="condition"></span>
+            </span>
+            <button
+              id="weather-edit"
+              class="icon-button"
+              type="button"
+              title="Edit weather location"
+              aria-label="Edit weather location"
+              hidden
+            >
+              <svg class="icon line" aria-hidden="true"
+                ><use href="#icon-lucide-pencil"></use></svg
+              >
+            </button>
+          </span>
+        </p>
+      </header>
+
+      <section id="toolbar" class="toolbar" aria-label="Edit page" hidden>
+        <button id="add-group" class="button" type="button">Add group</button>
+        <button id="import-button" class="button" type="button">Import</button>
+        <input
+          id="import-file"
+          type="file"
+          accept=".json,application/json"
+          hidden
+        />
+        <button id="export-button" class="button" type="button">Export</button>
+        <button
+          id="reset-button"
+          class="button"
+          type="button"
+          title="Go back to the recommended links">Reset</button
+        >
+        <button id="edit-done" class="button primary" type="button">Done</button
+        >
+      </section>
+
+      <form id="search" class="search" role="search">
+        <svg class="icon line" aria-hidden="true"
+          ><use href="#icon-lucide-search"></use></svg
+        >
+        <input
+          id="search-input"
+          type="text"
+          name="q"
+          role="combobox"
+          aria-label="Search or enter address"
+          aria-autocomplete="both"
+          aria-controls="search-results"
+          aria-expanded="false"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          enterkeyhint="go"
+          data-lpignore="true"
+          data-1p-ignore
+          data-bwignore
+          data-form-type="other"
+        />
+        <button
+          id="edit-toggle"
+          class="edit-toggle"
+          type="button"
+          title="Edit links and location"
+          aria-label="Edit links and location"
+        >
+          <svg class="icon line" aria-hidden="true"
+            ><use href="#icon-lucide-pencil"></use></svg
+          >
+        </button>
+        <ul
+          id="search-results"
+          class="results"
+          role="listbox"
+          aria-label="Suggestions"
+          hidden
+        >
+        </ul>
+      </form>
+
+      <div class="groups-box">
+        <nav class="groups" aria-label="Links"></nav>
+        <div class="layout-probe" aria-hidden="true"><div></div></div>
+      </div>
+
+      <div id="empty" class="empty" hidden>
+        <p>No links yet.</p>
+        <button id="empty-start" class="button" type="button"
+          >Add links or import</button
+        >
+      </div>
+    </main>
+
+    <a
+      class="repo-corner"
+      href="https://github.com/AcipenserSturio/homepage"
+      title="Source code and credits on GitHub"
+      aria-label="Source code and credits on GitHub"
+    >
+      <svg class="icon" aria-hidden="true"
+        ><use href="#icon-si-github"></use></svg
+      >
+    </a>
+
+    <p id="editor-message" class="editor-message" role="status"></p>
+
+    <dialog
+      id="location-dialog"
+      class="dialog"
+      aria-labelledby="location-dialog-title"
+    >
+      <form id="location-form" autocomplete="off" data-lpignore="true">
+        <h2 id="location-dialog-title">Weather location</h2>
+        <div class="location-row">
+          <input
+            id="location-input"
+            type="search"
+            autocomplete="off"
+            enterkeyhint="search"
+            aria-label="Place name"
+            data-lpignore="true"
+            data-1p-ignore
+            data-bwignore
+            data-form-type="other"
+          />
+          <button class="button primary" type="submit">Find</button>
+        </div>
+        <p id="location-message" class="dialog-message" role="status"></p>
+        <ul id="location-results" class="location-results"></ul>
+        <div class="dialog-actions">
+          <button id="location-remove" class="button" type="button"
+            >Remove</button
+          >
+          <span></span>
+          <button id="location-close" class="button" type="button">Close</button
+          >
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="link-dialog" class="dialog" aria-labelledby="link-dialog-title">
+      <form id="link-form" autocomplete="off" data-lpignore="true">
+        <h2 id="link-dialog-title">Edit link</h2>
+        <label for="link-title">Name</label>
+        <input
+          id="link-title"
+          type="search"
+          maxlength="200"
+          autocomplete="off"
+          required
+          data-lpignore="true"
+          data-1p-ignore
+          data-bwignore
+          data-form-type="other"
+        />
+        <label for="link-target">URL</label>
+        <input
+          id="link-target"
+          type="search"
+          inputmode="url"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          autocomplete="off"
+          data-lpignore="true"
+          data-1p-ignore
+          data-bwignore
+          data-form-type="other"
+        />
+        <p id="link-error" class="dialog-message" role="alert"></p>
+        <label for="icon-search">Icon</label>
+        <div class="icon-field">
+          <span id="icon-preview" class="icon-preview"></span>
+          <input
+            id="icon-search"
+            type="search"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            data-lpignore="true"
+            data-1p-ignore
+            data-bwignore
+            data-form-type="other"
+          />
+          <button
+            id="icon-clear"
+            class="icon-button"
+            type="button"
+            title="Remove icon and show the first letter"
+            aria-label="Remove icon and show the first letter"
+            hidden
+          >
+            <svg class="icon line" aria-hidden="true"
+              ><use href="#icon-lucide-x"></use></svg
+            >
+          </button>
+        </div>
+        <div id="icon-grid" class="icon-grid"></div>
+        <div class="dialog-actions">
+          <button id="link-delete" class="button" type="button">Delete</button>
+          <span></span>
+          <button id="link-cancel" class="button" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      import "../client/main.js";
+    </script>
+  </body>
+</html>
